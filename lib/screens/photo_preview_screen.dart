@@ -12,10 +12,20 @@ import 'package:intl/intl.dart';
 
 class PhotoPreviewScreen extends StatefulWidget {
   final String imagePath;
+  final DateTime? initialDate;
+  final String? initialLocation;
+  final String? initialWorkType;
+  final String? initialDescription;
+  final Position? currentPosition;
 
   const PhotoPreviewScreen({
     super.key,
     required this.imagePath,
+    this.initialDate,
+    this.initialLocation,
+    this.initialWorkType,
+    this.initialDescription,
+    this.currentPosition,
   });
 
   @override
@@ -35,7 +45,15 @@ class _PhotoPreviewScreenState extends State<PhotoPreviewScreen> {
   @override
   void initState() {
     super.initState();
-    _getCurrentLocation();
+    _selectedDate = widget.initialDate ?? DateTime.now();
+    _locationController.text = widget.initialLocation ?? '';
+    _workTypeController.text = widget.initialWorkType ?? '';
+    _descriptionController.text = widget.initialDescription ?? '';
+    _currentPosition = widget.currentPosition;
+    
+    if (_locationController.text.isEmpty) {
+      _getCurrentLocation();
+    }
   }
 
   Future<void> _getCurrentLocation() async {
