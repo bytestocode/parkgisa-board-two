@@ -1,24 +1,18 @@
-import 'dart:io';
 import 'dart:convert';
-import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'dart:io';
+
 import 'package:drift/drift.dart' as drift;
-import 'package:parkgisa_board_two/database/app_database.dart';
-import 'package:parkgisa_board_two/widgets/board_overlay.dart';
-import 'package:parkgisa_board_two/utils/image_saver.dart';
-import 'package:geolocator/geolocator.dart';
+import 'package:flutter/material.dart';
 import 'package:geocoding/geocoding.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:intl/intl.dart';
+import 'package:parkgisa_board_two/data/database/app_database.dart';
+import 'package:parkgisa_board_two/core/utils/image_saver.dart';
+import 'package:parkgisa_board_two/ui/photo_preview/components/board_overlay.dart';
+import 'package:provider/provider.dart';
 
-class PhotoPreviewScreen extends StatefulWidget {
-  final String imagePath;
-  final DateTime? initialDate;
-  final String? initialLocation;
-  final String? initialWorkType;
-  final String? initialDescription;
-  final Position? currentPosition;
-
-  const PhotoPreviewScreen({
+class PhotoPreviewPage extends StatefulWidget {
+  const PhotoPreviewPage({
     super.key,
     required this.imagePath,
     this.initialDate,
@@ -28,15 +22,22 @@ class PhotoPreviewScreen extends StatefulWidget {
     this.currentPosition,
   });
 
+  final String imagePath;
+  final DateTime? initialDate;
+  final String? initialLocation;
+  final String? initialWorkType;
+  final String? initialDescription;
+  final Position? currentPosition;
+
   @override
-  State<PhotoPreviewScreen> createState() => _PhotoPreviewScreenState();
+  State<PhotoPreviewPage> createState() => _PhotoPreviewPageState();
 }
 
-class _PhotoPreviewScreenState extends State<PhotoPreviewScreen> {
+class _PhotoPreviewPageState extends State<PhotoPreviewPage> {
   final TextEditingController _locationController = TextEditingController();
   final TextEditingController _workTypeController = TextEditingController();
   final TextEditingController _descriptionController = TextEditingController();
-  
+
   DateTime _selectedDate = DateTime.now();
   Position? _currentPosition;
   bool _isLoadingLocation = false;
@@ -50,7 +51,7 @@ class _PhotoPreviewScreenState extends State<PhotoPreviewScreen> {
     _workTypeController.text = widget.initialWorkType ?? '';
     _descriptionController.text = widget.initialDescription ?? '';
     _currentPosition = widget.currentPosition;
-    
+
     if (_locationController.text.isEmpty) {
       _getCurrentLocation();
     }
@@ -120,7 +121,7 @@ class _PhotoPreviewScreenState extends State<PhotoPreviewScreen> {
 
     try {
       final db = Provider.of<AppDatabase>(context, listen: false);
-      
+
       final boardInfo = {
         'date': DateFormat('yyyy-MM-dd').format(_selectedDate),
         'location': _locationController.text,
@@ -143,28 +144,36 @@ class _PhotoPreviewScreenState extends State<PhotoPreviewScreen> {
       final photoInfo = PhotoInfosCompanion(
         imagePath: drift.Value(savedImagePath),
         capturedAt: drift.Value(_selectedDate),
-        location: drift.Value(_locationController.text.isEmpty ? null : _locationController.text),
+        location: drift.Value(
+          _locationController.text.isEmpty ? null : _locationController.text,
+        ),
         latitude: drift.Value(_currentPosition?.latitude),
         longitude: drift.Value(_currentPosition?.longitude),
-        workType: drift.Value(_workTypeController.text.isEmpty ? null : _workTypeController.text),
-        description: drift.Value(_descriptionController.text.isEmpty ? null : _descriptionController.text),
+        workType: drift.Value(
+          _workTypeController.text.isEmpty ? null : _workTypeController.text,
+        ),
+        description: drift.Value(
+          _descriptionController.text.isEmpty
+              ? null
+              : _descriptionController.text,
+        ),
         customFields: drift.Value(jsonEncode(boardInfo)),
       );
 
       await db.insertPhoto(photoInfo);
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('사진이 저장되었습니다.')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('사진이 저장되었습니다.')));
         Navigator.of(context).popUntil((route) => route.isFirst);
       }
     } catch (e) {
       // 사진 저장 오류 처리
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('사진 저장 중 오류가 발생했습니다: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('사진 저장 중 오류가 발생했습니다: $e')));
       }
     } finally {
       setState(() {
@@ -195,10 +204,7 @@ class _PhotoPreviewScreenState extends State<PhotoPreviewScreen> {
               children: [
                 AspectRatio(
                   aspectRatio: 3 / 4,
-                  child: Image.file(
-                    File(widget.imagePath),
-                    fit: BoxFit.cover,
-                  ),
+                  child: Image.file(File(widget.imagePath), fit: BoxFit.cover),
                 ),
                 Positioned(
                   bottom: 0,
@@ -219,7 +225,9 @@ class _PhotoPreviewScreenState extends State<PhotoPreviewScreen> {
                 children: [
                   ListTile(
                     leading: const Icon(Icons.calendar_today),
-                    title: Text(DateFormat('yyyy년 MM월 dd일').format(_selectedDate)),
+                    title: Text(
+                      DateFormat('yyyy년 MM월 dd일').format(_selectedDate),
+                    ),
                     onTap: _selectDate,
                   ),
                   TextField(

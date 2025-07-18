@@ -1,11 +1,6 @@
 import 'package:flutter/material.dart';
 
 class BoardOverlay extends StatelessWidget {
-  final String date;
-  final String location;
-  final String workType;
-  final String description;
-
   const BoardOverlay({
     super.key,
     required this.date,
@@ -13,6 +8,11 @@ class BoardOverlay extends StatelessWidget {
     required this.workType,
     required this.description,
   });
+
+  final String date;
+  final String location;
+  final String workType;
+  final String description;
 
   @override
   Widget build(BuildContext context) {
@@ -61,10 +61,7 @@ class BoardOverlay extends StatelessWidget {
         Expanded(
           child: Text(
             value,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 14,
-            ),
+            style: const TextStyle(color: Colors.white, fontSize: 14),
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
           ),

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:parkgisa_board_two/data/database/app_database.dart';
+import 'package:parkgisa_board_two/ui/home/home_screen.dart';
 import 'package:provider/provider.dart';
-import 'package:parkgisa_board_two/database/app_database.dart';
-import 'package:parkgisa_board_two/screens/home_screen.dart';
 
 void main() {
   runApp(
@@ -19,6 +19,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      debugShowCheckedModeBanner: false,
       title: '박기사보드판',
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
@@ -26,7 +27,6 @@ class MyApp extends StatelessWidget {
         fontFamily: 'Pretendard',
       ),
       home: const HomeScreen(),
-      debugShowCheckedModeBanner: false,
     );
   }
 }

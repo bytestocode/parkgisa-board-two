@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:parkgisa_board_two/screens/camera_screen.dart';
-import 'package:parkgisa_board_two/screens/gallery_screen.dart';
+import 'package:parkgisa_board_two/ui/board/board_page.dart';
+import 'package:parkgisa_board_two/ui/gallery/gallery_page.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -12,10 +12,7 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   int _selectedIndex = 0;
 
-  final List<Widget> _pages = [
-    const CameraScreen(),
-    const GalleryScreen(),
-  ];
+  final List<Widget> _pages = [const BoardPage(), const GalleryPage()];
 
   @override
   Widget build(BuildContext context) {
@@ -29,10 +26,7 @@ class _HomeScreenState extends State<HomeScreen> {
           });
         },
         items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.camera_alt),
-            label: '촬영',
-          ),
+          BottomNavigationBarItem(icon: Icon(Icons.camera_alt), label: '촬영'),
           BottomNavigationBarItem(
             icon: Icon(Icons.photo_library),
             label: '갤러리',

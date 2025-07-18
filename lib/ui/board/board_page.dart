@@ -1,25 +1,25 @@
-import 'package:flutter/material.dart';
 import 'package:camera/camera.dart';
-import 'package:parkgisa_board_two/screens/photo_preview_screen.dart';
-import 'package:parkgisa_board_two/utils/permissions_handler.dart';
-import 'package:parkgisa_board_two/widgets/board_overlay.dart';
-import 'package:intl/intl.dart';
-import 'package:geolocator/geolocator.dart';
+import 'package:flutter/material.dart';
 import 'package:geocoding/geocoding.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:intl/intl.dart';
+import 'package:parkgisa_board_two/ui/photo_preview/components/board_overlay.dart';
+import 'package:parkgisa_board_two/ui/photo_preview/photo_preview_page.dart';
+import 'package:parkgisa_board_two/core/utils/permissions_handler.dart';
 
-class CameraScreen extends StatefulWidget {
-  const CameraScreen({super.key});
+class BoardPage extends StatefulWidget {
+  const BoardPage({super.key});
 
   @override
-  State<CameraScreen> createState() => _CameraScreenState();
+  State<BoardPage> createState() => _BoardPageState();
 }
 
-class _CameraScreenState extends State<CameraScreen> {
+class _BoardPageState extends State<BoardPage> {
   CameraController? _controller;
   List<CameraDescription>? _cameras;
   bool _isInitialized = false;
   bool _isTakingPicture = false;
-  
+
   final TextEditingController _locationController = TextEditingController();
   final TextEditingController _workTypeController = TextEditingController();
   final TextEditingController _descriptionController = TextEditingController();
@@ -39,9 +39,9 @@ class _CameraScreenState extends State<CameraScreen> {
     final hasPermission = await PermissionsHandler.requestCameraPermission();
     if (!hasPermission) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('카메라 권한이 필요합니다.')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('카메라 권한이 필요합니다.')));
       }
       return;
     }
@@ -123,7 +123,9 @@ class _CameraScreenState extends State<CameraScreen> {
   }
 
   Future<void> _takePicture() async {
-    if (_controller == null || !_controller!.value.isInitialized || _isTakingPicture) {
+    if (_controller == null ||
+        !_controller!.value.isInitialized ||
+        _isTakingPicture) {
       return;
     }
 
@@ -133,12 +135,12 @@ class _CameraScreenState extends State<CameraScreen> {
 
     try {
       final image = await _controller!.takePicture();
-      
+
       if (mounted) {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => PhotoPreviewScreen(
+            builder: (context) => PhotoPreviewPage(
               imagePath: image.path,
               initialDate: _selectedDate,
               initialLocation: _locationController.text,
@@ -152,9 +154,9 @@ class _CameraScreenState extends State<CameraScreen> {
     } catch (e) {
       // 사진 촬영 오류 처리
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('사진 촬영 중 오류가 발생했습니다: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('사진 촬영 중 오류가 발생했습니다: $e')));
       }
     } finally {
       setState(() {
@@ -176,7 +178,7 @@ class _CameraScreenState extends State<CameraScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('사진 촬영'),
+        title: const Text('보드판 설정'),
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
       ),
       body: _isInitialized
@@ -196,7 +198,9 @@ class _CameraScreenState extends State<CameraScreen> {
                           left: 0,
                           right: 0,
                           child: BoardOverlay(
-                            date: DateFormat('yyyy-MM-dd').format(_selectedDate),
+                            date: DateFormat(
+                              'yyyy-MM-dd',
+                            ).format(_selectedDate),
                             location: _locationController.text,
                             workType: _workTypeController.text,
                             description: _descriptionController.text,
@@ -226,7 +230,11 @@ class _CameraScreenState extends State<CameraScreen> {
                                   dense: true,
                                   contentPadding: EdgeInsets.zero,
                                   leading: const Icon(Icons.calendar_today),
-                                  title: Text(DateFormat('yyyy년 MM월 dd일').format(_selectedDate)),
+                                  title: Text(
+                                    DateFormat(
+                                      'yyyy년 MM월 dd일',
+                                    ).format(_selectedDate),
+                                  ),
                                   onTap: _selectDate,
                                 ),
                                 TextField(
@@ -238,7 +246,9 @@ class _CameraScreenState extends State<CameraScreen> {
                                         ? const SizedBox(
                                             width: 20,
                                             height: 20,
-                                            child: CircularProgressIndicator(strokeWidth: 2),
+                                            child: CircularProgressIndicator(
+                                              strokeWidth: 2,
+                                            ),
                                           )
                                         : IconButton(
                                             icon: const Icon(Icons.my_location),
@@ -273,7 +283,9 @@ class _CameraScreenState extends State<CameraScreen> {
                         padding: const EdgeInsets.symmetric(vertical: 16.0),
                         child: FloatingActionButton(
                           onPressed: _isTakingPicture ? null : _takePicture,
-                          backgroundColor: _isTakingPicture ? Colors.grey : Theme.of(context).colorScheme.primary,
+                          backgroundColor: _isTakingPicture
+                              ? Colors.grey
+                              : Theme.of(context).colorScheme.primary,
                           child: Icon(
                             Icons.camera_alt,
                             size: 30,
@@ -286,9 +298,7 @@ class _CameraScreenState extends State<CameraScreen> {
                 ),
               ],
             )
-          : const Center(
-              child: CircularProgressIndicator(),
-            ),
+          : const Center(child: CircularProgressIndicator()),
     );
   }
 }

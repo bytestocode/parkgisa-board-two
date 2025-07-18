@@ -2,17 +2,17 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:parkgisa_board_two/database/app_database.dart';
+import 'package:parkgisa_board_two/data/database/app_database.dart';
 import 'package:provider/provider.dart';
 
-class GalleryScreen extends StatefulWidget {
-  const GalleryScreen({super.key});
+class GalleryPage extends StatefulWidget {
+  const GalleryPage({super.key});
 
   @override
-  State<GalleryScreen> createState() => _GalleryScreenState();
+  State<GalleryPage> createState() => _GalleryPageState();
 }
 
-class _GalleryScreenState extends State<GalleryScreen>
+class _GalleryPageState extends State<GalleryPage>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
   String _selectedFilter = '';
