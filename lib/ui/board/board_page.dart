@@ -181,124 +181,118 @@ class _BoardPageState extends State<BoardPage> {
         title: const Text('보드판 설정'),
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
       ),
-      body: _isInitialized
-          ? Column(
+      body: Column(
+        children: [
+          Expanded(
+            child: Stack(
               children: [
-                Expanded(
-                  child: Stack(
-                    children: [
-                      SizedBox(
-                        width: double.infinity,
-                        height: double.infinity,
-                        child: CameraPreview(_controller!),
-                      ),
-                      if (_showBoardInputs)
-                        Positioned(
-                          bottom: 0,
-                          left: 0,
-                          right: 0,
-                          child: BoardOverlay(
-                            date: DateFormat(
-                              'yyyy-MM-dd',
-                            ).format(_selectedDate),
-                            location: _locationController.text,
-                            workType: _workTypeController.text,
-                            description: _descriptionController.text,
-                          ),
-                        ),
-                    ],
-                  ),
+                SizedBox(
+                  width: double.infinity,
+                  height: double.infinity,
+                  child: CameraPreview(_controller!),
                 ),
-                Container(
-                  color: Colors.white,
-                  child: Column(
-                    children: [
-                      ExpansionTile(
-                        title: const Text('보드판 정보 입력'),
-                        initiallyExpanded: _showBoardInputs,
-                        onExpansionChanged: (expanded) {
-                          setState(() {
-                            _showBoardInputs = expanded;
-                          });
-                        },
+                if (_showBoardInputs)
+                  Positioned(
+                    bottom: 0,
+                    left: 0,
+                    right: 0,
+                    child: BoardOverlay(
+                      date: DateFormat('yyyy-MM-dd').format(_selectedDate),
+                      location: _locationController.text,
+                      workType: _workTypeController.text,
+                      description: _descriptionController.text,
+                    ),
+                  ),
+              ],
+            ),
+          ),
+          Container(
+            color: Colors.white,
+            child: Column(
+              children: [
+                ExpansionTile(
+                  title: const Text('보드판 정보 입력'),
+                  initiallyExpanded: _showBoardInputs,
+                  onExpansionChanged: (expanded) {
+                    setState(() {
+                      _showBoardInputs = expanded;
+                    });
+                  },
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Column(
                         children: [
-                          Padding(
-                            padding: const EdgeInsets.all(16.0),
-                            child: Column(
-                              children: [
-                                ListTile(
-                                  dense: true,
-                                  contentPadding: EdgeInsets.zero,
-                                  leading: const Icon(Icons.calendar_today),
-                                  title: Text(
-                                    DateFormat(
-                                      'yyyy년 MM월 dd일',
-                                    ).format(_selectedDate),
-                                  ),
-                                  onTap: _selectDate,
-                                ),
-                                TextField(
-                                  controller: _locationController,
-                                  decoration: InputDecoration(
-                                    labelText: '위치',
-                                    prefixIcon: const Icon(Icons.location_on),
-                                    suffixIcon: _isLoadingLocation
-                                        ? const SizedBox(
-                                            width: 20,
-                                            height: 20,
-                                            child: CircularProgressIndicator(
-                                              strokeWidth: 2,
-                                            ),
-                                          )
-                                        : IconButton(
-                                            icon: const Icon(Icons.my_location),
-                                            onPressed: _getCurrentLocation,
-                                          ),
-                                  ),
-                                  onChanged: (_) => setState(() {}),
-                                ),
-                                TextField(
-                                  controller: _workTypeController,
-                                  decoration: const InputDecoration(
-                                    labelText: '공종',
-                                    prefixIcon: Icon(Icons.work),
-                                  ),
-                                  onChanged: (_) => setState(() {}),
-                                ),
-                                TextField(
-                                  controller: _descriptionController,
-                                  decoration: const InputDecoration(
-                                    labelText: '설명',
-                                    prefixIcon: Icon(Icons.description),
-                                  ),
-                                  maxLines: 2,
-                                  onChanged: (_) => setState(() {}),
-                                ),
-                              ],
+                          ListTile(
+                            dense: true,
+                            contentPadding: EdgeInsets.zero,
+                            leading: const Icon(Icons.calendar_today),
+                            title: Text(
+                              DateFormat('yyyy년 MM월 dd일').format(_selectedDate),
                             ),
+                            onTap: _selectDate,
+                          ),
+                          TextField(
+                            controller: _locationController,
+                            decoration: InputDecoration(
+                              labelText: '위치',
+                              prefixIcon: const Icon(Icons.location_on),
+                              suffixIcon: _isLoadingLocation
+                                  ? const SizedBox(
+                                      width: 20,
+                                      height: 20,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                      ),
+                                    )
+                                  : IconButton(
+                                      icon: const Icon(Icons.my_location),
+                                      onPressed: _getCurrentLocation,
+                                    ),
+                            ),
+                            onChanged: (_) => setState(() {}),
+                          ),
+                          TextField(
+                            controller: _workTypeController,
+                            decoration: const InputDecoration(
+                              labelText: '공종',
+                              prefixIcon: Icon(Icons.work),
+                            ),
+                            onChanged: (_) => setState(() {}),
+                          ),
+                          TextField(
+                            controller: _descriptionController,
+                            decoration: const InputDecoration(
+                              labelText: '설명',
+                              prefixIcon: Icon(Icons.description),
+                            ),
+                            maxLines: 2,
+                            onChanged: (_) => setState(() {}),
                           ),
                         ],
                       ),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 16.0),
-                        child: FloatingActionButton(
-                          onPressed: _isTakingPicture ? null : _takePicture,
-                          backgroundColor: _isTakingPicture
-                              ? Colors.grey
-                              : Theme.of(context).colorScheme.primary,
-                          child: Icon(
-                            Icons.camera_alt,
-                            size: 30,
-                            color: Colors.white,
-                          ),
-                        ),
-                      ),
-                    ],
+                    ),
+                  ],
+                ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 16.0),
+                  child: FloatingActionButton(
+                    onPressed: _isTakingPicture ? null : _takePicture,
+                    backgroundColor: _isTakingPicture
+                        ? Colors.grey
+                        : Theme.of(context).colorScheme.primary,
+                    child: Icon(
+                      Icons.camera_alt,
+                      size: 30,
+                      color: Colors.white,
+                    ),
                   ),
                 ),
               ],
-            )
-          : const Center(child: CircularProgressIndicator()),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
