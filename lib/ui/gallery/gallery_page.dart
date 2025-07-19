@@ -1,36 +1,18 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:intl/intl.dart';
 import 'package:parkgisa_board_two/data/database/app_database.dart';
 import 'package:provider/provider.dart';
 
-class GalleryPage extends StatefulWidget {
+class GalleryPage extends HookWidget {
   const GalleryPage({super.key});
 
   @override
-  State<GalleryPage> createState() => _GalleryPageState();
-}
-
-class _GalleryPageState extends State<GalleryPage>
-    with SingleTickerProviderStateMixin {
-  late TabController _tabController;
-  String _selectedFilter = '';
-
-  @override
-  void initState() {
-    super.initState();
-    _tabController = TabController(length: 4, vsync: this);
-  }
-
-  @override
-  void dispose() {
-    _tabController.dispose();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
+    final tabController = useTabController(initialLength: 4);
+    final selectedFilter = useState('');
     final db = Provider.of<AppDatabase>(context);
 
     return Scaffold(
@@ -38,7 +20,7 @@ class _GalleryPageState extends State<GalleryPage>
         title: const Text('사진 갤러리'),
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
         bottom: TabBar(
-          controller: _tabController,
+          controller: tabController,
           tabs: const [
             Tab(text: '전체'),
             Tab(text: '날짜별'),
@@ -48,12 +30,12 @@ class _GalleryPageState extends State<GalleryPage>
         ),
       ),
       body: TabBarView(
-        controller: _tabController,
+        controller: tabController,
         children: [
           _buildAllPhotosView(db),
-          _buildFilteredView(db, 'date'),
-          _buildFilteredView(db, 'location'),
-          _buildFilteredView(db, 'workType'),
+          _buildFilteredView(db, 'date', selectedFilter),
+          _buildFilteredView(db, 'location', selectedFilter),
+          _buildFilteredView(db, 'workType', selectedFilter),
         ],
       ),
     );
@@ -76,15 +58,15 @@ class _GalleryPageState extends State<GalleryPage>
     );
   }
 
-  Widget _buildFilteredView(AppDatabase db, String filterType) {
+  Widget _buildFilteredView(AppDatabase db, String filterType, ValueNotifier<String> selectedFilter) {
     return Column(
       children: [
-        _buildFilterChips(db, filterType),
+        _buildFilterChips(db, filterType, selectedFilter),
         Expanded(
-          child: _selectedFilter.isEmpty
+          child: selectedFilter.value.isEmpty
               ? const Center(child: Text('필터를 선택하세요'))
               : FutureBuilder<List<PhotoInfo>>(
-                  future: _getFilteredPhotos(db, filterType, _selectedFilter),
+                  future: _getFilteredPhotos(db, filterType, selectedFilter.value),
                   builder: (context, snapshot) {
                     if (snapshot.connectionState == ConnectionState.waiting) {
                       return const Center(child: CircularProgressIndicator());
@@ -102,7 +84,7 @@ class _GalleryPageState extends State<GalleryPage>
     );
   }
 
-  Widget _buildFilterChips(AppDatabase db, String filterType) {
+  Widget _buildFilterChips(AppDatabase db, String filterType, ValueNotifier<String> selectedFilter) {
     return Container(
       height: 60,
       padding: const EdgeInsets.symmetric(horizontal: 8),
@@ -120,11 +102,9 @@ class _GalleryPageState extends State<GalleryPage>
                 padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
                 child: FilterChip(
                   label: Text(option),
-                  selected: _selectedFilter == option,
+                  selected: selectedFilter.value == option,
                   onSelected: (selected) {
-                    setState(() {
-                      _selectedFilter = selected ? option : '';
-                    });
+                    selectedFilter.value = selected ? option : '';
                   },
                 ),
               );

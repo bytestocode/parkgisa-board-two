@@ -3,15 +3,16 @@ import 'dart:io';
 
 import 'package:drift/drift.dart' as drift;
 import 'package:flutter/material.dart';
+import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:intl/intl.dart';
-import 'package:parkgisa_board_two/data/database/app_database.dart';
 import 'package:parkgisa_board_two/core/utils/image_saver.dart';
+import 'package:parkgisa_board_two/data/database/app_database.dart';
 import 'package:parkgisa_board_two/ui/photo_preview/components/board_overlay.dart';
 import 'package:provider/provider.dart';
 
-class PhotoPreviewPage extends StatefulWidget {
+class PhotoPreviewPage extends HookWidget {
   const PhotoPreviewPage({
     super.key,
     required this.imagePath,
@@ -30,168 +31,145 @@ class PhotoPreviewPage extends StatefulWidget {
   final Position? currentPosition;
 
   @override
-  State<PhotoPreviewPage> createState() => _PhotoPreviewPageState();
-}
+  Widget build(BuildContext context) {
+    final locationController = useTextEditingController(
+      text: initialLocation ?? '',
+    );
+    final workTypeController = useTextEditingController(
+      text: initialWorkType ?? '',
+    );
+    final descriptionController = useTextEditingController(
+      text: initialDescription ?? '',
+    );
 
-class _PhotoPreviewPageState extends State<PhotoPreviewPage> {
-  final TextEditingController _locationController = TextEditingController();
-  final TextEditingController _workTypeController = TextEditingController();
-  final TextEditingController _descriptionController = TextEditingController();
+    final selectedDate = useState(initialDate ?? DateTime.now());
+    final currentPositionState = useState<Position?>(currentPosition);
+    final isLoadingLocation = useState(false);
+    final isSaving = useState(false);
 
-  DateTime _selectedDate = DateTime.now();
-  Position? _currentPosition;
-  bool _isLoadingLocation = false;
-  bool _isSaving = false;
+    Future<void> getCurrentLocation() async {
+      isLoadingLocation.value = true;
 
-  @override
-  void initState() {
-    super.initState();
-    _selectedDate = widget.initialDate ?? DateTime.now();
-    _locationController.text = widget.initialLocation ?? '';
-    _workTypeController.text = widget.initialWorkType ?? '';
-    _descriptionController.text = widget.initialDescription ?? '';
-    _currentPosition = widget.currentPosition;
-
-    if (_locationController.text.isEmpty) {
-      _getCurrentLocation();
-    }
-  }
-
-  Future<void> _getCurrentLocation() async {
-    setState(() {
-      _isLoadingLocation = true;
-    });
-
-    try {
-      final permission = await Geolocator.checkPermission();
-      if (permission == LocationPermission.denied) {
-        final requestedPermission = await Geolocator.requestPermission();
-        if (requestedPermission == LocationPermission.denied) {
-          return;
+      try {
+        final permission = await Geolocator.checkPermission();
+        if (permission == LocationPermission.denied) {
+          final requestedPermission = await Geolocator.requestPermission();
+          if (requestedPermission == LocationPermission.denied) {
+            return;
+          }
         }
-      }
 
-      _currentPosition = await Geolocator.getCurrentPosition(
-        locationSettings: const LocationSettings(
-          accuracy: LocationAccuracy.high,
-        ),
-      );
-
-      if (_currentPosition != null) {
-        List<Placemark> placemarks = await placemarkFromCoordinates(
-          _currentPosition!.latitude,
-          _currentPosition!.longitude,
+        currentPositionState.value = await Geolocator.getCurrentPosition(
+          locationSettings: const LocationSettings(
+            accuracy: LocationAccuracy.high,
+          ),
         );
 
-        if (placemarks.isNotEmpty) {
-          final place = placemarks.first;
-          final address = '${place.locality ?? ''} ${place.name ?? ''}'.trim();
-          _locationController.text = address;
+        if (currentPositionState.value != null) {
+          List<Placemark> placemarks = await placemarkFromCoordinates(
+            currentPositionState.value!.latitude,
+            currentPositionState.value!.longitude,
+          );
+
+          if (placemarks.isNotEmpty) {
+            final place = placemarks.first;
+            final address = '${place.locality ?? ''} ${place.name ?? ''}'
+                .trim();
+            locationController.text = address;
+          }
         }
+      } catch (e) {
+        // 위치 정보 가져오기 오류 처리
+      } finally {
+        isLoadingLocation.value = false;
       }
-    } catch (e) {
-      // 위치 정보 가져오기 오류 처리
-    } finally {
-      setState(() {
-        _isLoadingLocation = false;
-      });
     }
-  }
 
-  Future<void> _selectDate() async {
-    final DateTime? picked = await showDatePicker(
-      context: context,
-      initialDate: _selectedDate,
-      firstDate: DateTime(2000),
-      lastDate: DateTime.now(),
-    );
-    if (picked != null && picked != _selectedDate) {
-      setState(() {
-        _selectedDate = picked;
-      });
-    }
-  }
-
-  Future<void> _savePhoto() async {
-    if (_isSaving) return;
-
-    setState(() {
-      _isSaving = true;
-    });
-
-    try {
-      final db = Provider.of<AppDatabase>(context, listen: false);
-
-      final boardInfo = {
-        'date': DateFormat('yyyy-MM-dd').format(_selectedDate),
-        'location': _locationController.text,
-        'workType': _workTypeController.text,
-        'description': _descriptionController.text,
-      };
-
-      final savedImagePath = await ImageSaver.saveImageWithBoard(
-        originalImagePath: widget.imagePath,
-        boardInfo: boardInfo,
+    Future<void> selectDate() async {
+      final DateTime? picked = await showDatePicker(
+        context: context,
+        initialDate: selectedDate.value,
+        firstDate: DateTime(2000),
+        lastDate: DateTime.now(),
       );
-
-      if (_locationController.text.isNotEmpty) {
-        await db.insertLocation(_locationController.text);
+      if (picked != null && picked != selectedDate.value) {
+        selectedDate.value = picked;
       }
-      if (_workTypeController.text.isNotEmpty) {
-        await db.insertWorkType(_workTypeController.text);
-      }
-
-      final photoInfo = PhotoInfosCompanion(
-        imagePath: drift.Value(savedImagePath),
-        capturedAt: drift.Value(_selectedDate),
-        location: drift.Value(
-          _locationController.text.isEmpty ? null : _locationController.text,
-        ),
-        latitude: drift.Value(_currentPosition?.latitude),
-        longitude: drift.Value(_currentPosition?.longitude),
-        workType: drift.Value(
-          _workTypeController.text.isEmpty ? null : _workTypeController.text,
-        ),
-        description: drift.Value(
-          _descriptionController.text.isEmpty
-              ? null
-              : _descriptionController.text,
-        ),
-        customFields: drift.Value(jsonEncode(boardInfo)),
-      );
-
-      await db.insertPhoto(photoInfo);
-
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('사진이 저장되었습니다.')));
-        Navigator.of(context).popUntil((route) => route.isFirst);
-      }
-    } catch (e) {
-      // 사진 저장 오류 처리
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('사진 저장 중 오류가 발생했습니다: $e')));
-      }
-    } finally {
-      setState(() {
-        _isSaving = false;
-      });
     }
-  }
 
-  @override
-  void dispose() {
-    _locationController.dispose();
-    _workTypeController.dispose();
-    _descriptionController.dispose();
-    super.dispose();
-  }
+    Future<void> savePhoto() async {
+      if (isSaving.value) return;
 
-  @override
-  Widget build(BuildContext context) {
+      isSaving.value = true;
+
+      try {
+        final db = Provider.of<AppDatabase>(context, listen: false);
+
+        final boardInfo = {
+          'date': DateFormat('yyyy-MM-dd').format(selectedDate.value),
+          'location': locationController.text,
+          'workType': workTypeController.text,
+          'description': descriptionController.text,
+        };
+
+        final savedImagePath = await ImageSaver.saveImageWithBoard(
+          originalImagePath: imagePath,
+          boardInfo: boardInfo,
+        );
+
+        if (locationController.text.isNotEmpty) {
+          await db.insertLocation(locationController.text);
+        }
+        if (workTypeController.text.isNotEmpty) {
+          await db.insertWorkType(workTypeController.text);
+        }
+
+        final photoInfo = PhotoInfosCompanion(
+          imagePath: drift.Value(savedImagePath),
+          capturedAt: drift.Value(selectedDate.value),
+          location: drift.Value(
+            locationController.text.isEmpty ? null : locationController.text,
+          ),
+          latitude: drift.Value(currentPositionState.value?.latitude),
+          longitude: drift.Value(currentPositionState.value?.longitude),
+          workType: drift.Value(
+            workTypeController.text.isEmpty ? null : workTypeController.text,
+          ),
+          description: drift.Value(
+            descriptionController.text.isEmpty
+                ? null
+                : descriptionController.text,
+          ),
+          customFields: drift.Value(jsonEncode(boardInfo)),
+        );
+
+        await db.insertPhoto(photoInfo);
+
+        if (context.mounted) {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(const SnackBar(content: Text('사진이 저장되었습니다.')));
+          Navigator.of(context).popUntil((route) => route.isFirst);
+        }
+      } catch (e) {
+        // 사진 저장 오류 처리
+        if (context.mounted) {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text('사진 저장 중 오류가 발생했습니다: $e')));
+        }
+      } finally {
+        isSaving.value = false;
+      }
+    }
+
+    useEffect(() {
+      if (locationController.text.isEmpty) {
+        getCurrentLocation();
+      }
+      return null;
+    }, []);
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('사진 미리보기'),
@@ -204,17 +182,17 @@ class _PhotoPreviewPageState extends State<PhotoPreviewPage> {
               children: [
                 AspectRatio(
                   aspectRatio: 3 / 4,
-                  child: Image.file(File(widget.imagePath), fit: BoxFit.cover),
+                  child: Image.file(File(imagePath), fit: BoxFit.cover),
                 ),
                 Positioned(
                   bottom: 0,
                   left: 0,
                   right: 0,
                   child: BoardOverlay(
-                    date: DateFormat('yyyy-MM-dd').format(_selectedDate),
-                    location: _locationController.text,
-                    workType: _workTypeController.text,
-                    description: _descriptionController.text,
+                    date: DateFormat('yyyy-MM-dd').format(selectedDate.value),
+                    location: locationController.text,
+                    workType: workTypeController.text,
+                    description: descriptionController.text,
                   ),
                 ),
               ],
@@ -226,16 +204,16 @@ class _PhotoPreviewPageState extends State<PhotoPreviewPage> {
                   ListTile(
                     leading: const Icon(Icons.calendar_today),
                     title: Text(
-                      DateFormat('yyyy년 MM월 dd일').format(_selectedDate),
+                      DateFormat('yyyy년 MM월 dd일').format(selectedDate.value),
                     ),
-                    onTap: _selectDate,
+                    onTap: selectDate,
                   ),
                   TextField(
-                    controller: _locationController,
+                    controller: locationController,
                     decoration: InputDecoration(
                       labelText: '위치',
                       prefixIcon: const Icon(Icons.location_on),
-                      suffixIcon: _isLoadingLocation
+                      suffixIcon: isLoadingLocation.value
                           ? const SizedBox(
                               width: 20,
                               height: 20,
@@ -243,13 +221,13 @@ class _PhotoPreviewPageState extends State<PhotoPreviewPage> {
                             )
                           : IconButton(
                               icon: const Icon(Icons.my_location),
-                              onPressed: _getCurrentLocation,
+                              onPressed: getCurrentLocation,
                             ),
                     ),
                   ),
                   const SizedBox(height: 8),
                   TextField(
-                    controller: _workTypeController,
+                    controller: workTypeController,
                     decoration: const InputDecoration(
                       labelText: '공종',
                       prefixIcon: Icon(Icons.work),
@@ -257,7 +235,7 @@ class _PhotoPreviewPageState extends State<PhotoPreviewPage> {
                   ),
                   const SizedBox(height: 8),
                   TextField(
-                    controller: _descriptionController,
+                    controller: descriptionController,
                     decoration: const InputDecoration(
                       labelText: '설명',
                       prefixIcon: Icon(Icons.description),
@@ -266,11 +244,11 @@ class _PhotoPreviewPageState extends State<PhotoPreviewPage> {
                   ),
                   const SizedBox(height: 24),
                   ElevatedButton(
-                    onPressed: _isSaving ? null : _savePhoto,
+                    onPressed: isSaving.value ? null : savePhoto,
                     style: ElevatedButton.styleFrom(
                       minimumSize: const Size(double.infinity, 48),
                     ),
-                    child: _isSaving
+                    child: isSaving.value
                         ? const CircularProgressIndicator()
                         : const Text('저장'),
                   ),

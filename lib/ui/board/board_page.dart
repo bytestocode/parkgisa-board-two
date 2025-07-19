@@ -1,5 +1,6 @@
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:intl/intl.dart';
@@ -7,175 +8,148 @@ import 'package:parkgisa_board_two/ui/photo_preview/components/board_overlay.dar
 import 'package:parkgisa_board_two/ui/photo_preview/photo_preview_page.dart';
 import 'package:parkgisa_board_two/core/utils/permissions_handler.dart';
 
-class BoardPage extends StatefulWidget {
+class BoardPage extends HookWidget {
   const BoardPage({super.key});
 
   @override
-  State<BoardPage> createState() => _BoardPageState();
-}
+  Widget build(BuildContext context) {
+    final controller = useState<CameraController?>(null);
+    final cameras = useState<List<CameraDescription>?>(null);
+    final isInitialized = useState(false);
+    final isTakingPicture = useState(false);
 
-class _BoardPageState extends State<BoardPage> {
-  CameraController? _controller;
-  List<CameraDescription>? _cameras;
-  bool _isInitialized = false;
-  bool _isTakingPicture = false;
+    final locationController = useTextEditingController();
+    final workTypeController = useTextEditingController();
+    final descriptionController = useTextEditingController();
+    final selectedDate = useState(DateTime.now());
+    final currentPosition = useState<Position?>(null);
+    final isLoadingLocation = useState(false);
+    final showBoardInputs = useState(false);
 
-  final TextEditingController _locationController = TextEditingController();
-  final TextEditingController _workTypeController = TextEditingController();
-  final TextEditingController _descriptionController = TextEditingController();
-  DateTime _selectedDate = DateTime.now();
-  Position? _currentPosition;
-  bool _isLoadingLocation = false;
-  bool _showBoardInputs = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _initializeCamera();
-    _getCurrentLocation();
-  }
-
-  Future<void> _initializeCamera() async {
-    final hasPermission = await PermissionsHandler.requestCameraPermission();
-    if (!hasPermission) {
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('카메라 권한이 필요합니다.')));
-      }
-      return;
-    }
-
-    try {
-      _cameras = await availableCameras();
-      if (_cameras!.isNotEmpty) {
-        _controller = CameraController(
-          _cameras![0],
-          ResolutionPreset.high,
-          enableAudio: false,
-        );
-
-        await _controller!.initialize();
-        if (mounted) {
-          setState(() {
-            _isInitialized = true;
-          });
+    Future<void> initializeCamera() async {
+      final hasPermission = await PermissionsHandler.requestCameraPermission();
+      if (!hasPermission) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(const SnackBar(content: Text('카메라 권한이 필요합니다.')));
         }
+        return;
       }
-    } catch (e) {
-      // 카메라 초기화 오류 처리
-    }
-  }
 
-  Future<void> _getCurrentLocation() async {
-    setState(() {
-      _isLoadingLocation = true;
-    });
+      try {
+        cameras.value = await availableCameras();
+        if (cameras.value!.isNotEmpty) {
+          controller.value = CameraController(
+            cameras.value![0],
+            ResolutionPreset.high,
+            enableAudio: false,
+          );
 
-    try {
-      final permission = await Geolocator.checkPermission();
-      if (permission == LocationPermission.denied) {
-        final requestedPermission = await Geolocator.requestPermission();
-        if (requestedPermission == LocationPermission.denied) {
-          return;
+          await controller.value!.initialize();
+          isInitialized.value = true;
         }
+      } catch (e) {
+        // 카메라 초기화 오류 처리
       }
+    }
 
-      _currentPosition = await Geolocator.getCurrentPosition(
-        locationSettings: const LocationSettings(
-          accuracy: LocationAccuracy.high,
-        ),
-      );
+    Future<void> getCurrentLocation() async {
+      isLoadingLocation.value = true;
 
-      if (_currentPosition != null) {
-        List<Placemark> placemarks = await placemarkFromCoordinates(
-          _currentPosition!.latitude,
-          _currentPosition!.longitude,
-        );
-
-        if (placemarks.isNotEmpty) {
-          final place = placemarks.first;
-          final address = '${place.locality ?? ''} ${place.name ?? ''}'.trim();
-          _locationController.text = address;
+      try {
+        final permission = await Geolocator.checkPermission();
+        if (permission == LocationPermission.denied) {
+          final requestedPermission = await Geolocator.requestPermission();
+          if (requestedPermission == LocationPermission.denied) {
+            return;
+          }
         }
-      }
-    } catch (e) {
-      // 위치 정보 가져오기 오류 처리
-    } finally {
-      setState(() {
-        _isLoadingLocation = false;
-      });
-    }
-  }
 
-  Future<void> _selectDate() async {
-    final DateTime? picked = await showDatePicker(
-      context: context,
-      initialDate: _selectedDate,
-      firstDate: DateTime(2000),
-      lastDate: DateTime.now(),
-    );
-    if (picked != null && picked != _selectedDate) {
-      setState(() {
-        _selectedDate = picked;
-      });
-    }
-  }
-
-  Future<void> _takePicture() async {
-    if (_controller == null ||
-        !_controller!.value.isInitialized ||
-        _isTakingPicture) {
-      return;
-    }
-
-    setState(() {
-      _isTakingPicture = true;
-    });
-
-    try {
-      final image = await _controller!.takePicture();
-
-      if (mounted) {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => PhotoPreviewPage(
-              imagePath: image.path,
-              initialDate: _selectedDate,
-              initialLocation: _locationController.text,
-              initialWorkType: _workTypeController.text,
-              initialDescription: _descriptionController.text,
-              currentPosition: _currentPosition,
-            ),
+        currentPosition.value = await Geolocator.getCurrentPosition(
+          locationSettings: const LocationSettings(
+            accuracy: LocationAccuracy.high,
           ),
         );
+
+        if (currentPosition.value != null) {
+          List<Placemark> placemarks = await placemarkFromCoordinates(
+            currentPosition.value!.latitude,
+            currentPosition.value!.longitude,
+          );
+
+          if (placemarks.isNotEmpty) {
+            final place = placemarks.first;
+            final address = '${place.locality ?? ''} ${place.name ?? ''}'.trim();
+            locationController.text = address;
+          }
+        }
+      } catch (e) {
+        // 위치 정보 가져오기 오류 처리
+      } finally {
+        isLoadingLocation.value = false;
       }
-    } catch (e) {
-      // 사진 촬영 오류 처리
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('사진 촬영 중 오류가 발생했습니다: $e')));
-      }
-    } finally {
-      setState(() {
-        _isTakingPicture = false;
-      });
     }
-  }
 
-  @override
-  void dispose() {
-    _controller?.dispose();
-    _locationController.dispose();
-    _workTypeController.dispose();
-    _descriptionController.dispose();
-    super.dispose();
-  }
+    Future<void> selectDate() async {
+      final DateTime? picked = await showDatePicker(
+        context: context,
+        initialDate: selectedDate.value,
+        firstDate: DateTime(2000),
+        lastDate: DateTime.now(),
+      );
+      if (picked != null && picked != selectedDate.value) {
+        selectedDate.value = picked;
+      }
+    }
 
-  @override
-  Widget build(BuildContext context) {
+    Future<void> takePicture() async {
+      if (controller.value == null ||
+          !controller.value!.value.isInitialized ||
+          isTakingPicture.value) {
+        return;
+      }
+
+      isTakingPicture.value = true;
+
+      try {
+        final image = await controller.value!.takePicture();
+
+        if (context.mounted) {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => PhotoPreviewPage(
+                imagePath: image.path,
+                initialDate: selectedDate.value,
+                initialLocation: locationController.text,
+                initialWorkType: workTypeController.text,
+                initialDescription: descriptionController.text,
+                currentPosition: currentPosition.value,
+              ),
+            ),
+          );
+        }
+      } catch (e) {
+        // 사진 촬영 오류 처리
+        if (context.mounted) {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text('사진 촬영 중 오류가 발생했습니다: $e')));
+        }
+      } finally {
+        isTakingPicture.value = false;
+      }
+    }
+
+    useEffect(() {
+      initializeCamera();
+      getCurrentLocation();
+      return () {
+        controller.value?.dispose();
+      };
+    }, []);
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('보드판 설정'),
@@ -189,18 +163,20 @@ class _BoardPageState extends State<BoardPage> {
                 SizedBox(
                   width: double.infinity,
                   height: double.infinity,
-                  child: CameraPreview(_controller!),
+                  child: controller.value != null && isInitialized.value
+                      ? CameraPreview(controller.value!)
+                      : const Center(child: CircularProgressIndicator()),
                 ),
-                if (_showBoardInputs)
+                if (showBoardInputs.value)
                   Positioned(
                     bottom: 0,
                     left: 0,
                     right: 0,
                     child: BoardOverlay(
-                      date: DateFormat('yyyy-MM-dd').format(_selectedDate),
-                      location: _locationController.text,
-                      workType: _workTypeController.text,
-                      description: _descriptionController.text,
+                      date: DateFormat('yyyy-MM-dd').format(selectedDate.value),
+                      location: locationController.text,
+                      workType: workTypeController.text,
+                      description: descriptionController.text,
                     ),
                   ),
               ],
@@ -212,11 +188,9 @@ class _BoardPageState extends State<BoardPage> {
               children: [
                 ExpansionTile(
                   title: const Text('보드판 정보 입력'),
-                  initiallyExpanded: _showBoardInputs,
+                  initiallyExpanded: showBoardInputs.value,
                   onExpansionChanged: (expanded) {
-                    setState(() {
-                      _showBoardInputs = expanded;
-                    });
+                    showBoardInputs.value = expanded;
                   },
                   children: [
                     Padding(
@@ -228,16 +202,16 @@ class _BoardPageState extends State<BoardPage> {
                             contentPadding: EdgeInsets.zero,
                             leading: const Icon(Icons.calendar_today),
                             title: Text(
-                              DateFormat('yyyy년 MM월 dd일').format(_selectedDate),
+                              DateFormat('yyyy년 MM월 dd일').format(selectedDate.value),
                             ),
-                            onTap: _selectDate,
+                            onTap: selectDate,
                           ),
                           TextField(
-                            controller: _locationController,
+                            controller: locationController,
                             decoration: InputDecoration(
                               labelText: '위치',
                               prefixIcon: const Icon(Icons.location_on),
-                              suffixIcon: _isLoadingLocation
+                              suffixIcon: isLoadingLocation.value
                                   ? const SizedBox(
                                       width: 20,
                                       height: 20,
@@ -247,27 +221,27 @@ class _BoardPageState extends State<BoardPage> {
                                     )
                                   : IconButton(
                                       icon: const Icon(Icons.my_location),
-                                      onPressed: _getCurrentLocation,
+                                      onPressed: getCurrentLocation,
                                     ),
                             ),
-                            onChanged: (_) => setState(() {}),
+                            onChanged: (_) {},
                           ),
                           TextField(
-                            controller: _workTypeController,
+                            controller: workTypeController,
                             decoration: const InputDecoration(
                               labelText: '공종',
                               prefixIcon: Icon(Icons.work),
                             ),
-                            onChanged: (_) => setState(() {}),
+                            onChanged: (_) {},
                           ),
                           TextField(
-                            controller: _descriptionController,
+                            controller: descriptionController,
                             decoration: const InputDecoration(
                               labelText: '설명',
                               prefixIcon: Icon(Icons.description),
                             ),
                             maxLines: 2,
-                            onChanged: (_) => setState(() {}),
+                            onChanged: (_) {},
                           ),
                         ],
                       ),
@@ -277,8 +251,8 @@ class _BoardPageState extends State<BoardPage> {
                 Padding(
                   padding: const EdgeInsets.symmetric(vertical: 16.0),
                   child: FloatingActionButton(
-                    onPressed: _isTakingPicture ? null : _takePicture,
-                    backgroundColor: _isTakingPicture
+                    onPressed: isTakingPicture.value ? null : takePicture,
+                    backgroundColor: isTakingPicture.value
                         ? Colors.grey
                         : Theme.of(context).colorScheme.primary,
                     child: Icon(

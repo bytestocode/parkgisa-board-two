@@ -1,29 +1,23 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:parkgisa_board_two/ui/board/board_page.dart';
 import 'package:parkgisa_board_two/ui/gallery/gallery_page.dart';
 
-class HomeScreen extends StatefulWidget {
+class HomeScreen extends HookWidget {
   const HomeScreen({super.key});
 
   @override
-  State<HomeScreen> createState() => _HomeScreenState();
-}
-
-class _HomeScreenState extends State<HomeScreen> {
-  int _selectedIndex = 0;
-
-  final List<Widget> _pages = [const BoardPage(), const GalleryPage()];
-
-  @override
   Widget build(BuildContext context) {
+    final selectedIndex = useState(0);
+
+    final List<Widget> pages = [const BoardPage(), const GalleryPage()];
+
     return Scaffold(
-      body: _pages[_selectedIndex],
+      body: pages[selectedIndex.value],
       bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _selectedIndex,
+        currentIndex: selectedIndex.value,
         onTap: (index) {
-          setState(() {
-            _selectedIndex = index;
-          });
+          selectedIndex.value = index;
         },
         items: const [
           BottomNavigationBarItem(icon: Icon(Icons.camera_alt), label: '촬영'),
