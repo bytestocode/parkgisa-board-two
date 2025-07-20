@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:parkgisa_board_two/ui/board/board_page.dart';
 import 'package:parkgisa_board_two/ui/gallery/gallery_page.dart';
 
@@ -20,11 +21,18 @@ class HomeScreen extends HookWidget {
           selectedIndex.value = index;
         },
         items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.camera_alt), label: '촬영'),
           BottomNavigationBarItem(
-            icon: Icon(Icons.photo_library),
+            icon: FaIcon(FontAwesomeIcons.tableList),
+            label: '보드판',
+          ),
+          BottomNavigationBarItem(
+            icon: FaIcon(FontAwesomeIcons.solidImages),
             label: '갤러리',
           ),
+          // BottomNavigationBarItem(
+          //   icon: FaIcon(FontAwesomeIcons.solidFileImage),
+          //   label: '사진대지',
+          // ),
         ],
       ),
     );

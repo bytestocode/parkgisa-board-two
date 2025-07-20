@@ -1,58 +1,23 @@
-import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:intl/intl.dart';
-import 'package:parkgisa_board_two/ui/photo_preview/components/board_overlay.dart';
 import 'package:parkgisa_board_two/ui/photo_preview/photo_preview_page.dart';
-import 'package:parkgisa_board_two/core/utils/permissions_handler.dart';
 
 class BoardPage extends HookWidget {
   const BoardPage({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final controller = useState<CameraController?>(null);
-    final cameras = useState<List<CameraDescription>?>(null);
-    final isInitialized = useState(false);
-    final isTakingPicture = useState(false);
-
     final locationController = useTextEditingController();
     final workTypeController = useTextEditingController();
     final descriptionController = useTextEditingController();
     final selectedDate = useState(DateTime.now());
     final currentPosition = useState<Position?>(null);
     final isLoadingLocation = useState(false);
-    final showBoardInputs = useState(false);
 
-    Future<void> initializeCamera() async {
-      final hasPermission = await PermissionsHandler.requestCameraPermission();
-      if (!hasPermission) {
-        if (context.mounted) {
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(const SnackBar(content: Text('카메라 권한이 필요합니다.')));
-        }
-        return;
-      }
-
-      try {
-        cameras.value = await availableCameras();
-        if (cameras.value!.isNotEmpty) {
-          controller.value = CameraController(
-            cameras.value![0],
-            ResolutionPreset.high,
-            enableAudio: false,
-          );
-
-          await controller.value!.initialize();
-          isInitialized.value = true;
-        }
-      } catch (e) {
-        // 카메라 초기화 오류 처리
-      }
-    }
 
     Future<void> getCurrentLocation() async {
       isLoadingLocation.value = true;
@@ -80,7 +45,8 @@ class BoardPage extends HookWidget {
 
           if (placemarks.isNotEmpty) {
             final place = placemarks.first;
-            final address = '${place.locality ?? ''} ${place.name ?? ''}'.trim();
+            final address = '${place.locality ?? ''} ${place.name ?? ''}'
+                .trim();
             locationController.text = address;
           }
         }
@@ -103,24 +69,114 @@ class BoardPage extends HookWidget {
       }
     }
 
-    Future<void> takePicture() async {
-      if (controller.value == null ||
-          !controller.value!.value.isInitialized ||
-          isTakingPicture.value) {
-        return;
-      }
+    useEffect(() {
+      getCurrentLocation();
+      return null;
+    }, []);
 
-      isTakingPicture.value = true;
-
-      try {
-        final image = await controller.value!.takePicture();
-
-        if (context.mounted) {
+    return Scaffold(
+      body: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              '보드판 정보 입력',
+              style: Theme.of(
+                context,
+              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              '보드판 정보를 입력하고 사진을 촬영해주세요',
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 16, color: Colors.grey.shade600),
+            ),
+            const SizedBox(height: 16),
+            Card(
+              elevation: 0,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+                side: BorderSide(color: Colors.grey.shade300),
+              ),
+              child: InkWell(
+                onTap: selectDate,
+                borderRadius: BorderRadius.circular(12),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 12,
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.calendar_today, size: 20),
+                      const SizedBox(width: 12),
+                      Text(
+                        DateFormat('yyyy년 MM월 dd일').format(selectedDate.value),
+                        style: const TextStyle(fontSize: 16),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: locationController,
+              decoration: InputDecoration(
+                labelText: '위치',
+                prefixIcon: const Icon(Icons.location_on),
+                suffixIcon: isLoadingLocation.value
+                    ? const SizedBox(
+                        width: 24,
+                        height: 24,
+                        child: Padding(
+                          padding: EdgeInsets.all(12.0),
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        ),
+                      )
+                    : IconButton(
+                        icon: const Icon(Icons.my_location),
+                        onPressed: getCurrentLocation,
+                      ),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: workTypeController,
+              decoration: InputDecoration(
+                labelText: '공종',
+                prefixIcon: const Icon(Icons.work),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: descriptionController,
+              decoration: InputDecoration(
+                labelText: '설명',
+                prefixIcon: const Icon(Icons.description),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              maxLines: 3,
+            ),
+          ],
+        ),
+      ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () {
           Navigator.push(
             context,
             MaterialPageRoute(
               builder: (context) => PhotoPreviewPage(
-                imagePath: image.path,
+                imagePath: '',
                 initialDate: selectedDate.value,
                 initialLocation: locationController.text,
                 initialWorkType: workTypeController.text,
@@ -129,144 +185,12 @@ class BoardPage extends HookWidget {
               ),
             ),
           );
-        }
-      } catch (e) {
-        // 사진 촬영 오류 처리
-        if (context.mounted) {
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(SnackBar(content: Text('사진 촬영 중 오류가 발생했습니다: $e')));
-        }
-      } finally {
-        isTakingPicture.value = false;
-      }
-    }
-
-    useEffect(() {
-      initializeCamera();
-      getCurrentLocation();
-      return () {
-        controller.value?.dispose();
-      };
-    }, []);
-
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('보드판 설정'),
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
+        },
+        backgroundColor: Theme.of(context).colorScheme.primary,
+        label: const Text('사진 촬영', style: TextStyle(fontSize: 16)),
+        icon: const FaIcon(FontAwesomeIcons.camera, size: 20),
       ),
-      body: Column(
-        children: [
-          Expanded(
-            child: Stack(
-              children: [
-                SizedBox(
-                  width: double.infinity,
-                  height: double.infinity,
-                  child: controller.value != null && isInitialized.value
-                      ? CameraPreview(controller.value!)
-                      : const Center(child: CircularProgressIndicator()),
-                ),
-                if (showBoardInputs.value)
-                  Positioned(
-                    bottom: 0,
-                    left: 0,
-                    right: 0,
-                    child: BoardOverlay(
-                      date: DateFormat('yyyy-MM-dd').format(selectedDate.value),
-                      location: locationController.text,
-                      workType: workTypeController.text,
-                      description: descriptionController.text,
-                    ),
-                  ),
-              ],
-            ),
-          ),
-          Container(
-            color: Colors.white,
-            child: Column(
-              children: [
-                ExpansionTile(
-                  title: const Text('보드판 정보 입력'),
-                  initiallyExpanded: showBoardInputs.value,
-                  onExpansionChanged: (expanded) {
-                    showBoardInputs.value = expanded;
-                  },
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.all(16.0),
-                      child: Column(
-                        children: [
-                          ListTile(
-                            dense: true,
-                            contentPadding: EdgeInsets.zero,
-                            leading: const Icon(Icons.calendar_today),
-                            title: Text(
-                              DateFormat('yyyy년 MM월 dd일').format(selectedDate.value),
-                            ),
-                            onTap: selectDate,
-                          ),
-                          TextField(
-                            controller: locationController,
-                            decoration: InputDecoration(
-                              labelText: '위치',
-                              prefixIcon: const Icon(Icons.location_on),
-                              suffixIcon: isLoadingLocation.value
-                                  ? const SizedBox(
-                                      width: 20,
-                                      height: 20,
-                                      child: CircularProgressIndicator(
-                                        strokeWidth: 2,
-                                      ),
-                                    )
-                                  : IconButton(
-                                      icon: const Icon(Icons.my_location),
-                                      onPressed: getCurrentLocation,
-                                    ),
-                            ),
-                            onChanged: (_) {},
-                          ),
-                          TextField(
-                            controller: workTypeController,
-                            decoration: const InputDecoration(
-                              labelText: '공종',
-                              prefixIcon: Icon(Icons.work),
-                            ),
-                            onChanged: (_) {},
-                          ),
-                          TextField(
-                            controller: descriptionController,
-                            decoration: const InputDecoration(
-                              labelText: '설명',
-                              prefixIcon: Icon(Icons.description),
-                            ),
-                            maxLines: 2,
-                            onChanged: (_) {},
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-                Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 16.0),
-                  child: FloatingActionButton(
-                    onPressed: isTakingPicture.value ? null : takePicture,
-                    backgroundColor: isTakingPicture.value
-                        ? Colors.grey
-                        : Theme.of(context).colorScheme.primary,
-                    child: Icon(
-                      Icons.camera_alt,
-                      size: 30,
-                      color: Colors.white,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
     );
   }
 }
