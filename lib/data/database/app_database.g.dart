@@ -55,28 +55,6 @@ class $PhotoInfosTable extends PhotoInfos
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
-  static const VerificationMeta _latitudeMeta = const VerificationMeta(
-    'latitude',
-  );
-  @override
-  late final GeneratedColumn<double> latitude = GeneratedColumn<double>(
-    'latitude',
-    aliasedName,
-    true,
-    type: DriftSqlType.double,
-    requiredDuringInsert: false,
-  );
-  static const VerificationMeta _longitudeMeta = const VerificationMeta(
-    'longitude',
-  );
-  @override
-  late final GeneratedColumn<double> longitude = GeneratedColumn<double>(
-    'longitude',
-    aliasedName,
-    true,
-    type: DriftSqlType.double,
-    requiredDuringInsert: false,
-  );
   static const VerificationMeta _workTypeMeta = const VerificationMeta(
     'workType',
   );
@@ -128,8 +106,6 @@ class $PhotoInfosTable extends PhotoInfos
     imagePath,
     capturedAt,
     location,
-    latitude,
-    longitude,
     workType,
     description,
     customFields,
@@ -170,18 +146,6 @@ class $PhotoInfosTable extends PhotoInfos
       context.handle(
         _locationMeta,
         location.isAcceptableOrUnknown(data['location']!, _locationMeta),
-      );
-    }
-    if (data.containsKey('latitude')) {
-      context.handle(
-        _latitudeMeta,
-        latitude.isAcceptableOrUnknown(data['latitude']!, _latitudeMeta),
-      );
-    }
-    if (data.containsKey('longitude')) {
-      context.handle(
-        _longitudeMeta,
-        longitude.isAcceptableOrUnknown(data['longitude']!, _longitudeMeta),
       );
     }
     if (data.containsKey('work_type')) {
@@ -239,14 +203,6 @@ class $PhotoInfosTable extends PhotoInfos
         DriftSqlType.string,
         data['${effectivePrefix}location'],
       ),
-      latitude: attachedDatabase.typeMapping.read(
-        DriftSqlType.double,
-        data['${effectivePrefix}latitude'],
-      ),
-      longitude: attachedDatabase.typeMapping.read(
-        DriftSqlType.double,
-        data['${effectivePrefix}longitude'],
-      ),
       workType: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}work_type'],
@@ -277,8 +233,6 @@ class PhotoInfo extends DataClass implements Insertable<PhotoInfo> {
   final String imagePath;
   final DateTime capturedAt;
   final String? location;
-  final double? latitude;
-  final double? longitude;
   final String? workType;
   final String? description;
   final String? customFields;
@@ -288,8 +242,6 @@ class PhotoInfo extends DataClass implements Insertable<PhotoInfo> {
     required this.imagePath,
     required this.capturedAt,
     this.location,
-    this.latitude,
-    this.longitude,
     this.workType,
     this.description,
     this.customFields,
@@ -303,12 +255,6 @@ class PhotoInfo extends DataClass implements Insertable<PhotoInfo> {
     map['captured_at'] = Variable<DateTime>(capturedAt);
     if (!nullToAbsent || location != null) {
       map['location'] = Variable<String>(location);
-    }
-    if (!nullToAbsent || latitude != null) {
-      map['latitude'] = Variable<double>(latitude);
-    }
-    if (!nullToAbsent || longitude != null) {
-      map['longitude'] = Variable<double>(longitude);
     }
     if (!nullToAbsent || workType != null) {
       map['work_type'] = Variable<String>(workType);
@@ -331,12 +277,6 @@ class PhotoInfo extends DataClass implements Insertable<PhotoInfo> {
       location: location == null && nullToAbsent
           ? const Value.absent()
           : Value(location),
-      latitude: latitude == null && nullToAbsent
-          ? const Value.absent()
-          : Value(latitude),
-      longitude: longitude == null && nullToAbsent
-          ? const Value.absent()
-          : Value(longitude),
       workType: workType == null && nullToAbsent
           ? const Value.absent()
           : Value(workType),
@@ -360,8 +300,6 @@ class PhotoInfo extends DataClass implements Insertable<PhotoInfo> {
       imagePath: serializer.fromJson<String>(json['imagePath']),
       capturedAt: serializer.fromJson<DateTime>(json['capturedAt']),
       location: serializer.fromJson<String?>(json['location']),
-      latitude: serializer.fromJson<double?>(json['latitude']),
-      longitude: serializer.fromJson<double?>(json['longitude']),
       workType: serializer.fromJson<String?>(json['workType']),
       description: serializer.fromJson<String?>(json['description']),
       customFields: serializer.fromJson<String?>(json['customFields']),
@@ -376,8 +314,6 @@ class PhotoInfo extends DataClass implements Insertable<PhotoInfo> {
       'imagePath': serializer.toJson<String>(imagePath),
       'capturedAt': serializer.toJson<DateTime>(capturedAt),
       'location': serializer.toJson<String?>(location),
-      'latitude': serializer.toJson<double?>(latitude),
-      'longitude': serializer.toJson<double?>(longitude),
       'workType': serializer.toJson<String?>(workType),
       'description': serializer.toJson<String?>(description),
       'customFields': serializer.toJson<String?>(customFields),
@@ -390,8 +326,6 @@ class PhotoInfo extends DataClass implements Insertable<PhotoInfo> {
     String? imagePath,
     DateTime? capturedAt,
     Value<String?> location = const Value.absent(),
-    Value<double?> latitude = const Value.absent(),
-    Value<double?> longitude = const Value.absent(),
     Value<String?> workType = const Value.absent(),
     Value<String?> description = const Value.absent(),
     Value<String?> customFields = const Value.absent(),
@@ -401,8 +335,6 @@ class PhotoInfo extends DataClass implements Insertable<PhotoInfo> {
     imagePath: imagePath ?? this.imagePath,
     capturedAt: capturedAt ?? this.capturedAt,
     location: location.present ? location.value : this.location,
-    latitude: latitude.present ? latitude.value : this.latitude,
-    longitude: longitude.present ? longitude.value : this.longitude,
     workType: workType.present ? workType.value : this.workType,
     description: description.present ? description.value : this.description,
     customFields: customFields.present ? customFields.value : this.customFields,
@@ -416,8 +348,6 @@ class PhotoInfo extends DataClass implements Insertable<PhotoInfo> {
           ? data.capturedAt.value
           : this.capturedAt,
       location: data.location.present ? data.location.value : this.location,
-      latitude: data.latitude.present ? data.latitude.value : this.latitude,
-      longitude: data.longitude.present ? data.longitude.value : this.longitude,
       workType: data.workType.present ? data.workType.value : this.workType,
       description: data.description.present
           ? data.description.value
@@ -436,8 +366,6 @@ class PhotoInfo extends DataClass implements Insertable<PhotoInfo> {
           ..write('imagePath: $imagePath, ')
           ..write('capturedAt: $capturedAt, ')
           ..write('location: $location, ')
-          ..write('latitude: $latitude, ')
-          ..write('longitude: $longitude, ')
           ..write('workType: $workType, ')
           ..write('description: $description, ')
           ..write('customFields: $customFields, ')
@@ -452,8 +380,6 @@ class PhotoInfo extends DataClass implements Insertable<PhotoInfo> {
     imagePath,
     capturedAt,
     location,
-    latitude,
-    longitude,
     workType,
     description,
     customFields,
@@ -467,8 +393,6 @@ class PhotoInfo extends DataClass implements Insertable<PhotoInfo> {
           other.imagePath == this.imagePath &&
           other.capturedAt == this.capturedAt &&
           other.location == this.location &&
-          other.latitude == this.latitude &&
-          other.longitude == this.longitude &&
           other.workType == this.workType &&
           other.description == this.description &&
           other.customFields == this.customFields &&
@@ -480,8 +404,6 @@ class PhotoInfosCompanion extends UpdateCompanion<PhotoInfo> {
   final Value<String> imagePath;
   final Value<DateTime> capturedAt;
   final Value<String?> location;
-  final Value<double?> latitude;
-  final Value<double?> longitude;
   final Value<String?> workType;
   final Value<String?> description;
   final Value<String?> customFields;
@@ -491,8 +413,6 @@ class PhotoInfosCompanion extends UpdateCompanion<PhotoInfo> {
     this.imagePath = const Value.absent(),
     this.capturedAt = const Value.absent(),
     this.location = const Value.absent(),
-    this.latitude = const Value.absent(),
-    this.longitude = const Value.absent(),
     this.workType = const Value.absent(),
     this.description = const Value.absent(),
     this.customFields = const Value.absent(),
@@ -503,8 +423,6 @@ class PhotoInfosCompanion extends UpdateCompanion<PhotoInfo> {
     required String imagePath,
     required DateTime capturedAt,
     this.location = const Value.absent(),
-    this.latitude = const Value.absent(),
-    this.longitude = const Value.absent(),
     this.workType = const Value.absent(),
     this.description = const Value.absent(),
     this.customFields = const Value.absent(),
@@ -516,8 +434,6 @@ class PhotoInfosCompanion extends UpdateCompanion<PhotoInfo> {
     Expression<String>? imagePath,
     Expression<DateTime>? capturedAt,
     Expression<String>? location,
-    Expression<double>? latitude,
-    Expression<double>? longitude,
     Expression<String>? workType,
     Expression<String>? description,
     Expression<String>? customFields,
@@ -528,8 +444,6 @@ class PhotoInfosCompanion extends UpdateCompanion<PhotoInfo> {
       if (imagePath != null) 'image_path': imagePath,
       if (capturedAt != null) 'captured_at': capturedAt,
       if (location != null) 'location': location,
-      if (latitude != null) 'latitude': latitude,
-      if (longitude != null) 'longitude': longitude,
       if (workType != null) 'work_type': workType,
       if (description != null) 'description': description,
       if (customFields != null) 'custom_fields': customFields,
@@ -542,8 +456,6 @@ class PhotoInfosCompanion extends UpdateCompanion<PhotoInfo> {
     Value<String>? imagePath,
     Value<DateTime>? capturedAt,
     Value<String?>? location,
-    Value<double?>? latitude,
-    Value<double?>? longitude,
     Value<String?>? workType,
     Value<String?>? description,
     Value<String?>? customFields,
@@ -554,8 +466,6 @@ class PhotoInfosCompanion extends UpdateCompanion<PhotoInfo> {
       imagePath: imagePath ?? this.imagePath,
       capturedAt: capturedAt ?? this.capturedAt,
       location: location ?? this.location,
-      latitude: latitude ?? this.latitude,
-      longitude: longitude ?? this.longitude,
       workType: workType ?? this.workType,
       description: description ?? this.description,
       customFields: customFields ?? this.customFields,
@@ -577,12 +487,6 @@ class PhotoInfosCompanion extends UpdateCompanion<PhotoInfo> {
     }
     if (location.present) {
       map['location'] = Variable<String>(location.value);
-    }
-    if (latitude.present) {
-      map['latitude'] = Variable<double>(latitude.value);
-    }
-    if (longitude.present) {
-      map['longitude'] = Variable<double>(longitude.value);
     }
     if (workType.present) {
       map['work_type'] = Variable<String>(workType.value);
@@ -606,8 +510,6 @@ class PhotoInfosCompanion extends UpdateCompanion<PhotoInfo> {
           ..write('imagePath: $imagePath, ')
           ..write('capturedAt: $capturedAt, ')
           ..write('location: $location, ')
-          ..write('latitude: $latitude, ')
-          ..write('longitude: $longitude, ')
           ..write('workType: $workType, ')
           ..write('description: $description, ')
           ..write('customFields: $customFields, ')
@@ -1347,8 +1249,6 @@ typedef $$PhotoInfosTableCreateCompanionBuilder =
       required String imagePath,
       required DateTime capturedAt,
       Value<String?> location,
-      Value<double?> latitude,
-      Value<double?> longitude,
       Value<String?> workType,
       Value<String?> description,
       Value<String?> customFields,
@@ -1360,8 +1260,6 @@ typedef $$PhotoInfosTableUpdateCompanionBuilder =
       Value<String> imagePath,
       Value<DateTime> capturedAt,
       Value<String?> location,
-      Value<double?> latitude,
-      Value<double?> longitude,
       Value<String?> workType,
       Value<String?> description,
       Value<String?> customFields,
@@ -1394,16 +1292,6 @@ class $$PhotoInfosTableFilterComposer
 
   ColumnFilters<String> get location => $composableBuilder(
     column: $table.location,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<double> get latitude => $composableBuilder(
-    column: $table.latitude,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<double> get longitude => $composableBuilder(
-    column: $table.longitude,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -1457,16 +1345,6 @@ class $$PhotoInfosTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<double> get latitude => $composableBuilder(
-    column: $table.latitude,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<double> get longitude => $composableBuilder(
-    column: $table.longitude,
-    builder: (column) => ColumnOrderings(column),
-  );
-
   ColumnOrderings<String> get workType => $composableBuilder(
     column: $table.workType,
     builder: (column) => ColumnOrderings(column),
@@ -1510,12 +1388,6 @@ class $$PhotoInfosTableAnnotationComposer
 
   GeneratedColumn<String> get location =>
       $composableBuilder(column: $table.location, builder: (column) => column);
-
-  GeneratedColumn<double> get latitude =>
-      $composableBuilder(column: $table.latitude, builder: (column) => column);
-
-  GeneratedColumn<double> get longitude =>
-      $composableBuilder(column: $table.longitude, builder: (column) => column);
 
   GeneratedColumn<String> get workType =>
       $composableBuilder(column: $table.workType, builder: (column) => column);
@@ -1569,8 +1441,6 @@ class $$PhotoInfosTableTableManager
                 Value<String> imagePath = const Value.absent(),
                 Value<DateTime> capturedAt = const Value.absent(),
                 Value<String?> location = const Value.absent(),
-                Value<double?> latitude = const Value.absent(),
-                Value<double?> longitude = const Value.absent(),
                 Value<String?> workType = const Value.absent(),
                 Value<String?> description = const Value.absent(),
                 Value<String?> customFields = const Value.absent(),
@@ -1580,8 +1450,6 @@ class $$PhotoInfosTableTableManager
                 imagePath: imagePath,
                 capturedAt: capturedAt,
                 location: location,
-                latitude: latitude,
-                longitude: longitude,
                 workType: workType,
                 description: description,
                 customFields: customFields,
@@ -1593,8 +1461,6 @@ class $$PhotoInfosTableTableManager
                 required String imagePath,
                 required DateTime capturedAt,
                 Value<String?> location = const Value.absent(),
-                Value<double?> latitude = const Value.absent(),
-                Value<double?> longitude = const Value.absent(),
                 Value<String?> workType = const Value.absent(),
                 Value<String?> description = const Value.absent(),
                 Value<String?> customFields = const Value.absent(),
@@ -1604,8 +1470,6 @@ class $$PhotoInfosTableTableManager
                 imagePath: imagePath,
                 capturedAt: capturedAt,
                 location: location,
-                latitude: latitude,
-                longitude: longitude,
                 workType: workType,
                 description: description,
                 customFields: customFields,

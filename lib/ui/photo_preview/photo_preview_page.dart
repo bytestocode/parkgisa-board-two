@@ -5,8 +5,6 @@ import 'package:camera/camera.dart';
 import 'package:drift/drift.dart' as drift;
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
-import 'package:geocoding/geocoding.dart';
-import 'package:geolocator/geolocator.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:parkgisa_board_two/core/utils/image_saver.dart';
@@ -23,7 +21,6 @@ class PhotoPreviewPage extends HookWidget {
     this.initialLocation,
     this.initialWorkType,
     this.initialDescription,
-    this.currentPosition,
   });
 
   final String imagePath;
@@ -31,7 +28,6 @@ class PhotoPreviewPage extends HookWidget {
   final String? initialLocation;
   final String? initialWorkType;
   final String? initialDescription;
-  final Position? currentPosition;
 
   @override
   Widget build(BuildContext context) {
@@ -46,8 +42,6 @@ class PhotoPreviewPage extends HookWidget {
     );
 
     final selectedDate = useState(initialDate ?? DateTime.now());
-    final currentPositionState = useState<Position?>(currentPosition);
-    final isLoadingLocation = useState(false);
     final isSaving = useState(false);
     
     // Camera related states
@@ -57,44 +51,6 @@ class PhotoPreviewPage extends HookWidget {
     final isTakingPicture = useState(false);
     final capturedImagePath = useState<String?>(imagePath.isEmpty ? null : imagePath);
     final showCamera = useState(imagePath.isEmpty);
-
-    Future<void> getCurrentLocation() async {
-      isLoadingLocation.value = true;
-
-      try {
-        final permission = await Geolocator.checkPermission();
-        if (permission == LocationPermission.denied) {
-          final requestedPermission = await Geolocator.requestPermission();
-          if (requestedPermission == LocationPermission.denied) {
-            return;
-          }
-        }
-
-        currentPositionState.value = await Geolocator.getCurrentPosition(
-          locationSettings: const LocationSettings(
-            accuracy: LocationAccuracy.high,
-          ),
-        );
-
-        if (currentPositionState.value != null) {
-          List<Placemark> placemarks = await placemarkFromCoordinates(
-            currentPositionState.value!.latitude,
-            currentPositionState.value!.longitude,
-          );
-
-          if (placemarks.isNotEmpty) {
-            final place = placemarks.first;
-            final address = '${place.locality ?? ''} ${place.name ?? ''}'
-                .trim();
-            locationController.text = address;
-          }
-        }
-      } catch (e) {
-        // 위치 정보 가져오기 오류 처리
-      } finally {
-        isLoadingLocation.value = false;
-      }
-    }
 
     Future<void> selectDate() async {
       final DateTime? picked = await showDatePicker(
@@ -150,8 +106,6 @@ class PhotoPreviewPage extends HookWidget {
           location: drift.Value(
             locationController.text.isEmpty ? null : locationController.text,
           ),
-          latitude: drift.Value(currentPositionState.value?.latitude),
-          longitude: drift.Value(currentPositionState.value?.longitude),
           workType: drift.Value(
             workTypeController.text.isEmpty ? null : workTypeController.text,
           ),
@@ -262,9 +216,6 @@ class PhotoPreviewPage extends HookWidget {
     }
 
     useEffect(() {
-      if (locationController.text.isEmpty) {
-        getCurrentLocation();
-      }
       if (imagePath.isEmpty) {
         initializeCamera();
       }
@@ -393,23 +344,6 @@ class PhotoPreviewPage extends HookWidget {
                       DateFormat('yyyy년 MM월 dd일').format(selectedDate.value),
                     ),
                     onTap: selectDate,
-                  ),
-                  TextField(
-                    controller: locationController,
-                    decoration: InputDecoration(
-                      labelText: '위치',
-                      prefixIcon: const Icon(Icons.location_on),
-                      suffixIcon: isLoadingLocation.value
-                          ? const SizedBox(
-                              width: 20,
-                              height: 20,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            )
-                          : IconButton(
-                              icon: const Icon(Icons.my_location),
-                              onPressed: getCurrentLocation,
-                            ),
-                    ),
                   ),
                   const SizedBox(height: 8),
                   TextField(
