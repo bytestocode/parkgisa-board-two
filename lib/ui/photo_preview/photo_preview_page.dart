@@ -10,8 +10,10 @@ import 'package:intl/intl.dart';
 import 'package:parkgisa_board_two/core/utils/image_saver.dart';
 import 'package:parkgisa_board_two/core/utils/permissions_handler.dart';
 import 'package:parkgisa_board_two/data/database/app_database.dart';
+import 'package:parkgisa_board_two/ui/board/edit/edit_board_page.dart';
 import 'package:parkgisa_board_two/ui/photo_preview/components/board_overlay.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class PhotoPreviewPage extends HookWidget {
   const PhotoPreviewPage({
@@ -21,6 +23,7 @@ class PhotoPreviewPage extends HookWidget {
     this.initialLocation,
     this.initialWorkType,
     this.initialDescription,
+    this.fromGallery = false,
   });
 
   final String imagePath;
@@ -28,6 +31,7 @@ class PhotoPreviewPage extends HookWidget {
   final String? initialLocation;
   final String? initialWorkType;
   final String? initialDescription;
+  final bool fromGallery;
 
   @override
   Widget build(BuildContext context) {
@@ -51,6 +55,9 @@ class PhotoPreviewPage extends HookWidget {
     final isTakingPicture = useState(false);
     final capturedImagePath = useState<String?>(imagePath.isEmpty ? null : imagePath);
     final showCamera = useState(imagePath.isEmpty);
+    
+    // Overlay position
+    final overlayPosition = useState<OverlayPosition>(OverlayPosition.bottomRight);
 
     Future<void> selectDate() async {
       final DateTime? picked = await showDatePicker(
@@ -216,8 +223,22 @@ class PhotoPreviewPage extends HookWidget {
     }
 
     useEffect(() {
+      // 오버레이 위치 설정 불러오기
+      SharedPreferences.getInstance().then((prefs) {
+        final positionIndex = prefs.getInt('overlay_position') ?? 3;
+        overlayPosition.value = OverlayPosition.values[positionIndex];
+      });
+      
       if (imagePath.isEmpty) {
-        initializeCamera();
+        if (fromGallery) {
+          // 갤러리에서 선택하는 경우 바로 pickFromGallery 실행
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            pickFromGallery();
+          });
+        } else {
+          // 카메라로 촬영하는 경우 카메라 초기화
+          initializeCamera();
+        }
       }
       return () {
         controller.value?.dispose();
@@ -264,10 +285,8 @@ class PhotoPreviewPage extends HookWidget {
                         child: CircularProgressIndicator(),
                       ),
                     ),
-                  Positioned(
-                    bottom: 0,
-                    left: 0,
-                    right: 0,
+                  _buildOverlayPositioned(
+                    position: overlayPosition.value,
                     child: BoardOverlay(
                       date: DateFormat('yyyy-MM-dd').format(selectedDate.value),
                       location: locationController.text,
@@ -396,5 +415,37 @@ class PhotoPreviewPage extends HookWidget {
         ),
       ),
     );
+  }
+  
+  Widget _buildOverlayPositioned({
+    required OverlayPosition position,
+    required Widget child,
+  }) {
+    switch (position) {
+      case OverlayPosition.topLeft:
+        return Positioned(
+          top: 0,
+          left: 0,
+          child: child,
+        );
+      case OverlayPosition.topRight:
+        return Positioned(
+          top: 0,
+          right: 0,
+          child: child,
+        );
+      case OverlayPosition.bottomLeft:
+        return Positioned(
+          bottom: 0,
+          left: 0,
+          child: child,
+        );
+      case OverlayPosition.bottomRight:
+        return Positioned(
+          bottom: 0,
+          right: 0,
+          child: child,
+        );
+    }
   }
 }

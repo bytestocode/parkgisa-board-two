@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:parkgisa_board_two/data/database/app_database.dart';
 import 'package:parkgisa_board_two/ui/home/home_screen.dart';
 import 'package:provider/provider.dart';
@@ -27,6 +28,12 @@ class MyApp extends StatelessWidget {
         fontFamily: 'Pretendard',
       ),
       home: const HomeScreen(),
+      localizationsDelegates: const [
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      supportedLocales: const [Locale('ko', 'KR')],
     );
   }
 }

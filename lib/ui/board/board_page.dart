@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
+import 'package:parkgisa_board_two/ui/board/edit/edit_board_page.dart';
 import 'package:parkgisa_board_two/ui/photo_preview/photo_preview_page.dart';
 
 class BoardPage extends HookWidget {
@@ -25,6 +26,18 @@ class BoardPage extends HookWidget {
         backgroundColor: Colors.white,
         foregroundColor: Colors.black87,
         elevation: 0,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.settings),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const EditBoardPage()),
+              );
+            },
+            tooltip: '보드판 편집',
+          ),
+        ],
       ),
       body: SingleChildScrollView(
         child: Container(
@@ -129,7 +142,8 @@ class BoardPage extends HookWidget {
                             padding: const EdgeInsets.symmetric(horizontal: 16),
                             child: Text(
                               DateFormat(
-                                'yyyy년 MM월 dd일',
+                                'yyyy년 MM월 dd일 (E)',
+                                'ko_KR',
                               ).format(selectedDate.value),
                               style: const TextStyle(
                                 fontSize: 18,
@@ -147,26 +161,85 @@ class BoardPage extends HookWidget {
           ),
         ),
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => PhotoPreviewPage(
-                imagePath: '',
-                initialDate: selectedDate.value,
-                initialLocation: locationController.text,
-                initialWorkType: companyController.text,
-                initialDescription: descriptionController.text,
-              ),
+      bottomSheet: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.1),
+              blurRadius: 8,
+              offset: const Offset(0, -2),
             ),
-          );
-        },
-        backgroundColor: Theme.of(context).primaryColor,
-        label: const Text('사진 촬영', style: TextStyle(fontSize: 16)),
-        icon: const FaIcon(FontAwesomeIcons.camera, size: 20),
+          ],
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Row(
+            children: [
+              Expanded(
+                child: FilledButton.icon(
+                  onPressed: () async {
+                    final imageXFile = await ImagePicker().pickImage(
+                      source: ImageSource.gallery,
+                    );
+                    if (imageXFile != null && context.mounted) {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => PhotoPreviewPage(
+                            imagePath: imageXFile.path,
+                            initialDate: selectedDate.value,
+                            initialLocation: locationController.text,
+                            initialWorkType: companyController.text,
+                            initialDescription: descriptionController.text,
+                            fromGallery: true,
+                          ),
+                        ),
+                      );
+                    }
+                  },
+                  icon: const Icon(Icons.photo_library),
+                  label: const Text('갤러리에서 선택'),
+                  style: ElevatedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: FilledButton.icon(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => PhotoPreviewPage(
+                          imagePath: '',
+                          initialDate: selectedDate.value,
+                          initialLocation: locationController.text,
+                          initialWorkType: companyController.text,
+                          initialDescription: descriptionController.text,
+                          fromGallery: false,
+                        ),
+                      ),
+                    );
+                  },
+                  icon: const Icon(Icons.camera_alt),
+                  label: const Text('사진 촬영'),
+                  style: ElevatedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
     );
   }
   
